@@ -31,4 +31,5 @@ version_bump version:
     VERSION=$(uv version --short)
     git add pyproject.toml uv.lock
     git commit -m "Version bump to v$VERSION"
+    git tag -a "v$VERSION"
     just _success "Version bumped to v$VERSION."
