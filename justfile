@@ -3,4 +3,4 @@
 
 # Format code
 @format:
-  ruff format .
+  uvx ruff format .

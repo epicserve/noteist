@@ -7,8 +7,6 @@ import argparse
 import requests
 from datetime import datetime, timedelta
 
-from environs import env
-
 logger = logging.getLogger(__name__)
 
 
@@ -84,9 +82,12 @@ def format_task_info(prev_task: dict, task: dict) -> str:
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Generate Todoist completed tasks report."
+        prog="noteist", description="Output a Markdown formatted report of completed tasks in Todoist."
     )
-    parser.add_argument("--project", type=str, help="Project name (e.g., Work)")
+    parser.add_argument(
+        "--project", type=str, help="Project name (e.g., Work)", required=True
+    )
+    parser.add_argument("--token", type=str, help="Todoist API token", required=True)
     parser.add_argument(
         "--since",
         type=str,
@@ -103,10 +104,8 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
+def cli():
     args = parse_args()
-    env.read_env()
-    api_token = env.str("TODOIST_API_TOKEN")
 
     if args.debug:
         logging.basicConfig(
@@ -115,7 +114,7 @@ def main():
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 
-    client = TodoistClient(api_token)
+    client = TodoistClient(args.token)
 
     project = client.find_project_by_name(args.project)
     if not project:
@@ -152,7 +151,3 @@ def main():
     for task in completed_tasks:
         print(format_task_info(prev_task, task))
         prev_task = task
-
-
-if __name__ == "__main__":
-    main()

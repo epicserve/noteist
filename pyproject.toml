@@ -1,15 +1,16 @@
 [project]
-name = "todoist-report"
+name = "noteist"
 version = "0.1.0"
-description = "A script to get a list of completed tasks in a project in Markdown format."
+description = "Output a Markdown formatted report of completed tasks in Todoist."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "environs>=14.2.0",
     "requests>=2.32.4",
 ]
 
-[dependency-groups]
-dev = [
-    "ruff>=0.12.3",
-]
+[build-system]
+requires = ["uv_build>=0.8.0,<0.9"]
+build-backend = "uv_build"
+
+[project.scripts]
+noteist = "noteist.cli:cli"
