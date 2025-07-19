@@ -1,0 +1,36 @@
+name: Publish Python Package
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: read
+
+jobs:
+
+  lint:
+    uses: ./.github/workflows/lint.yml
+
+  publish:
+    runs-on: ubuntu-latest
+
+    needs:
+      - lint
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python 3.13
+        run: uv python install 3.13
+
+      - name: Build package
+        run: uv build --python 3.13
+
+      - name: Publish package
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
+        run: uv publish
