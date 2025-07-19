@@ -109,9 +109,17 @@ def save_config(token=None, project=None):
 
 
 def parse_args():
+    from noteist import __version__
+
     parser = argparse.ArgumentParser(
         prog="noteist",
         description="Output a Markdown formatted report of completed tasks in Todoist.",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"noteist {__version__}",
+        help="Show the version and exit.",
     )
     config = load_config()
     parser.add_argument(
