@@ -3,9 +3,12 @@
 import logging
 import textwrap
 import argparse
+import os
+import toml
 
 import requests
 from datetime import datetime, timedelta
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -80,14 +83,51 @@ def format_task_info(prev_task: dict, task: dict) -> str:
     return rtn_val
 
 
+def get_config_path():
+    config_dir = Path.home() / ".config" / "noteist"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    return str(config_dir / "config.toml")
+
+
+def load_config():
+    config_path = get_config_path()
+    if os.path.exists(config_path):
+        with open(config_path, "r") as f:
+            return toml.load(f)
+    return {}
+
+
+def save_config(token=None, project=None):
+    config_path = get_config_path()
+    config = load_config()
+    if token:
+        config["token"] = token
+    if project:
+        config["project"] = project
+    with open(config_path, "w") as f:
+        toml.dump(config, f)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
-        prog="noteist", description="Output a Markdown formatted report of completed tasks in Todoist."
+        prog="noteist",
+        description="Output a Markdown formatted report of completed tasks in Todoist.",
+    )
+    config = load_config()
+    parser.add_argument(
+        "--project",
+        type=str,
+        help="Project name (e.g., Work)",
+        required=("project" not in config),
+        default=config.get("project"),
     )
     parser.add_argument(
-        "--project", type=str, help="Project name (e.g., Work)", required=True
+        "--token",
+        type=str,
+        help="Todoist API token",
+        required=("token" not in config),
+        default=config.get("token"),
     )
-    parser.add_argument("--token", type=str, help="Todoist API token", required=True)
     parser.add_argument(
         "--since",
         type=str,
@@ -101,11 +141,24 @@ def parse_args():
         help="End date (YYYY-MM-DD, default: today)",
     )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    parser.add_argument(
+        "--save-project",
+        action="store_true",
+        help="Save the provided project as default",
+    )
+    parser.add_argument(
+        "--save-token", action="store_true", help="Save the provided token as default"
+    )
     return parser.parse_args()
 
 
 def cli():
     args = parse_args()
+
+    if args.save_project:
+        save_config(project=args.project)
+    if args.save_token:
+        save_config(token=args.token)
 
     if args.debug:
         logging.basicConfig(
@@ -118,12 +171,15 @@ def cli():
 
     project = client.find_project_by_name(args.project)
     if not project:
-        print(f"Error: Could not find project named '{args.project}'")
+        # Print error in red and exit with code 1
+        print(
+            f"\n\033[91mError: Could not find project named '{args.project}'\033[0m\n"
+        )
         print("Available projects:")
         projects = client.get_projects()
-        for project in projects:
+        for project in projects["results"]:
             print(f"  - {project['name']}")
-        return
+        exit(1)
 
     # Calculate date range (last week)
     since = datetime.strptime(args.since, "%Y-%m-%d")
