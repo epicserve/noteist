@@ -131,7 +131,7 @@ def parse_args():
     parser.add_argument(
         "--since",
         type=str,
-        default=(datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d"),
+        default=(datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d"),
         help="Start date (YYYY-MM-DD, default: one week ago)",
     )
     parser.add_argument(
