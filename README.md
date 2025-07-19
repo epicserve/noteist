@@ -20,24 +20,25 @@ A script to generate a Markdown report of completed tasks in a Todoist project.
 
 ## Usage
 
-```
-uvx noteist -h                                                               
-usage: noteist [-h] --project PROJECT --token TOKEN [--since SINCE] [--until UNTIL] [--debug]
+Print help:
 
-Output a Markdown formatted report of completed tasks in Todoist.
-
-options:
-  -h, --help         show this help message and exit
-  --project PROJECT  Project name (e.g., Work)
-  --token TOKEN      Todoist API token
-  --since SINCE      Start date (YYYY-MM-DD, default: one week ago)
-  --until UNTIL      End date (YYYY-MM-DD, default: today)
-  --debug            Enable debug logging
-```
-
-Example:
 ```sh
-uvx noteist --project "Work" --since 2025-07-01 --until 2025-07-15
+uvx noteist --help                                                               
+```
+
+Out completed tasks for the Todoist project Work with the default of two weeks:
+```sh
+uvx noteist --project "Work" --token <TOKEN>
+```
+
+Save the project "Work" and your token as the defaults:
+```sh
+uvx noteist --project "Work" --token <TOKEN> --save-project --save-token
+```
+
+Specify the time range:
+```sh
+uvx noteist --since 2025-07-01 --until 2025-07-15
 ```
 
 ## Development
