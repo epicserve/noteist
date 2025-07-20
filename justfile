@@ -15,6 +15,7 @@ format: format_just format_python
 
 @format_python:
     just _start_command "Formatting Python"
+    uvx ruff check --select I --fix
     uvx ruff format
 
 @lint: lint_python

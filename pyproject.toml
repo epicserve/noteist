@@ -7,6 +7,7 @@ requires-python = ">=3.9"
 dependencies = [
     "requests>=2.32.4",
     "toml>=0.10.2",
+    "typer>=0.16.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3.9",
@@ -31,3 +32,25 @@ build-backend = "uv_build"
 
 [project.scripts]
 noteist = "noteist.cli:cli"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle
+    "F",  # Pyflakes
+    "UP",  # pyupgrade
+    "B",  # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "I",  # isort
+    "D",  # pydocstyle
+    "S",  # bandit
+]
+ignore = ["D100", "D101", "D102", "D103", "D104", "D106", "D203", "D212"]
+
+[tool.ruff.lint.isort]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder", ]
+
+[tool.ruff.lint.per-file-ignores]
+"**/{tests}/*" = ["S101"]
