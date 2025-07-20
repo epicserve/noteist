@@ -1,6 +1,6 @@
 # Noteist
 
-A script to generate a Markdown report of completed tasks in a Todoist project.
+Print out a report of completed tasks in a Todoist project in Markdown.
 
 
 ## Features
@@ -21,19 +21,33 @@ A script to generate a Markdown report of completed tasks in a Todoist project.
 ## Usage
 
 Print help:
-
 ```sh
-uvx noteist --help                                                               
+uvx noteist --help
 ```
 
-Out completed tasks for the Todoist project Work with the default of two weeks:
+Print out completed tasks for the Todoist project Work with the default of two weeks:
 ```sh
 uvx noteist --project "Work" --token <TOKEN>
 ```
 
-Save the project "Work" and your token as the defaults:
+Save the project "Work" as the default:
 ```sh
-uvx noteist --project "Work" --token <TOKEN> --save-project --save-token
+uvx noteist config set project Work
+```
+
+Save the token "example-token" as the default:
+```sh
+uvx noteist config set token example-token
+```
+
+List saved defaults:
+```sh
+uvx noteist config list
+```
+
+Unset a saved default:
+```sh
+uvx noteist config unset project
 ```
 
 Specify the time range:

@@ -2,68 +2,17 @@
 
 import logging
 import textwrap
-import argparse
-import os
-import toml
-
-import requests
 from datetime import datetime, timedelta
-from pathlib import Path
+
+import typer
+from rich import print
+from typer import Context
+from typing_extensions import Annotated  # noqa: UP035
+
+from noteist.config_app import config_app, load_config
+from noteist.todoist_client import TodoistClient
 
 logger = logging.getLogger(__name__)
-
-
-class TodoistClient:
-    def __init__(self, api_token: str):
-        self.api_token = api_token
-        self.base_url = "https://api.todoist.com/api/v1"
-        self.headers = {
-            "Authorization": f"Bearer {api_token}",
-            "Content-Type": "application/json",
-        }
-
-    def _request(self, method: str, endpoint: str, params=None) -> list[dict] | dict:
-        """Generic method to make API requests."""
-        url = f"{self.base_url}/{endpoint}"
-        params = params or {}
-        response = requests.request(method, url, headers=self.headers, params=params)
-        response.raise_for_status()
-        return response.json()
-
-    def get_projects(self) -> list[dict]:
-        """Get all projects."""
-        return self._request("GET", "projects")
-
-    def find_project_by_name(self, project_name: str) -> dict | None:
-        """Find a project by name."""
-        projects = self.get_projects()
-        if not projects or "results" not in projects:
-            return None
-        else:
-            projects = projects["results"]
-
-        for project in projects:
-            if project["name"].lower() == project_name.lower():
-                logger.info(f"Found project: {project['name']} (ID: {project['id']})")
-                return project
-        return None
-
-    def get_completed_tasks(
-        self, project_id: str, since: datetime, until: datetime
-    ) -> list[dict]:
-        """Get completed tasks for a specific project since a given date."""
-        iso_8601_format = "%Y-%m-%dT%H:%M:%SZ"
-
-        data = self._request(
-            "GET",
-            "tasks/completed/by_completion_date",
-            params={
-                "project_id": project_id,
-                "since": since.strftime(iso_8601_format),
-                "until": until.strftime(iso_8601_format),
-            },
-        )
-        return data["items"]
 
 
 def format_task_info(prev_task: dict, task: dict) -> str:
@@ -83,135 +32,92 @@ def format_task_info(prev_task: dict, task: dict) -> str:
     return rtn_val
 
 
-def get_config_path():
-    config_dir = Path.home() / ".config" / "noteist"
-    config_dir.mkdir(parents=True, exist_ok=True)
-    return str(config_dir / "config.toml")
+def _version_callback(value: bool):
+    if value:
+        from noteist import __version__
+
+        print(f"\n[green]noteist[/green] {__version__}")
+        raise typer.Exit()
 
 
-def load_config():
-    config_path = get_config_path()
-    if os.path.exists(config_path):
-        with open(config_path, "r") as f:
-            return toml.load(f)
-    return {}
+app = typer.Typer()
+app.add_typer(config_app, name="config", help="Manage default values and options.")
 
 
-def save_config(token=None, project=None):
-    config_path = get_config_path()
-    config = load_config()
-    if token:
-        config["token"] = token
-    if project:
-        config["project"] = project
-    with open(config_path, "w") as f:
-        toml.dump(config, f)
+@app.callback(invoke_without_command=True)
+def main(
+    ctx: Context,
+    project: Annotated[str, typer.Option(help="Project name (e.g., Work)")] = "",
+    token: Annotated[str, typer.Option(..., help="Todoist API token")] = "",
+    since: Annotated[
+        str,
+        typer.Option(
+            ...,
+            help="Start date (YYYY-MM-DD, default: two weeks ago)",
+        ),
+    ] = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d"),
+    until: Annotated[
+        str,
+        typer.Option(
+            ...,
+            help="End date (YYYY-MM-DD, default: today)",
+        ),
+    ] = datetime.now().strftime("%Y-%m-%d"),
+    version: Annotated[bool, typer.Option("--version", help="Print the current version", is_flag=True)] = False,
+    debug: Annotated[bool, typer.Option("--debug", help="Enable debug logging", is_flag=True)] = False,
+):
+    if ctx.invoked_subcommand is not None:
+        return
 
+    if version:
+        _version_callback(version)
+        return
 
-def parse_args():
-    from noteist import __version__
-
-    parser = argparse.ArgumentParser(
-        prog="noteist",
-        description="Output a Markdown formatted report of completed tasks in Todoist.",
-    )
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=f"noteist {__version__}",
-        help="Show the version and exit.",
-    )
-    config = load_config()
-    parser.add_argument(
-        "--project",
-        type=str,
-        help="Project name (e.g., Work)",
-        required=("project" not in config),
-        default=config.get("project"),
-    )
-    parser.add_argument(
-        "--token",
-        type=str,
-        help="Todoist API token",
-        required=("token" not in config),
-        default=config.get("token"),
-    )
-    parser.add_argument(
-        "--since",
-        type=str,
-        default=(datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d"),
-        help="Start date (YYYY-MM-DD, default: one week ago)",
-    )
-    parser.add_argument(
-        "--until",
-        type=str,
-        default=datetime.now().strftime("%Y-%m-%d"),
-        help="End date (YYYY-MM-DD, default: today)",
-    )
-    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
-    parser.add_argument(
-        "--save-project",
-        action="store_true",
-        help="Save the provided project as default",
-    )
-    parser.add_argument(
-        "--save-token", action="store_true", help="Save the provided token as default"
-    )
-    return parser.parse_args()
-
-
-def cli():
-    args = parse_args()
-
-    if args.save_project:
-        save_config(project=args.project)
-    if args.save_token:
-        save_config(token=args.token)
-
-    if args.debug:
+    config_data = load_config()
+    if not project:
+        project = config_data.get("project")
+    if not token:
+        token = config_data.get("token")
+    if not project:
+        print("\n[bold red]Error: The --project option is required, if you haven't set a default.[/bold red]\n")
+        raise typer.Exit(1)
+    if not token:
+        print("\n[red]Error: The --token option is is required, if you haven't set a default.[/red]\n")
+        raise typer.Exit(1)
+    if debug:
         logging.basicConfig(
             level=logging.DEBUG,
             format="%(asctime)s - %(levelname)s - %(module)s - %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
-
-    client = TodoistClient(args.token)
-
-    project = client.find_project_by_name(args.project)
-    if not project:
-        # Print error in red and exit with code 1
-        print(
-            f"\n\033[91mError: Could not find project named '{args.project}'\033[0m\n"
-        )
+    client = TodoistClient(token)
+    proj = client.find_project_by_name(project)
+    if not proj:
+        print(f"\n[red]Error: Could not find project named '{project}'[/red]\n")
         print("Available projects:")
         projects = client.get_projects()
-        for project in projects["results"]:
-            print(f"  - {project['name']}")
-        exit(1)
-
-    # Calculate date range (last week)
-    since = datetime.strptime(args.since, "%Y-%m-%d")
-    until = (
-        datetime.strptime(args.until, "%Y-%m-%d")
-        + timedelta(days=1)
-        - timedelta(seconds=1)
-    )
-
-    completed_tasks = client.get_completed_tasks(project["id"], since, until)
-    time_range_str = f"({since.strftime('%Y-%m-%d')} to {until.strftime('%Y-%m-%d')})"
-
+        for p in projects["results"]:
+            print(f"  - {p['name']}")
+        raise typer.Exit(1)
+    if not since:
+        since = datetime.now().strftime("%Y-%m-%d")
+    if not until:
+        until = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d")
+    since_dt = datetime.strptime(since, "%Y-%m-%d")
+    until_dt = datetime.strptime(until, "%Y-%m-%d") + timedelta(days=1) - timedelta(seconds=1)
+    completed_tasks = client.get_completed_tasks(proj["id"], since_dt, until_dt)
+    time_range_str = f"({since_dt.strftime('%Y-%m-%d')} to {until_dt.strftime('%Y-%m-%d')})"
     if not completed_tasks:
-        print(f"\nNo completed tasks found {time_range_str}")
+        typer.echo(f"\nNo completed tasks found {time_range_str}")
         return
-
-    # Display results
-    print(f"\n📋 Completed Tasks in #Canopy {time_range_str}")
-    print("=" * 56)
-    print(f"Total completed: {len(completed_tasks)}\n")
-
-    prev_task = {
-        "parent_id": None,
-    }
+    typer.echo(f"\n📋 Completed Tasks in #Canopy {time_range_str}")
+    typer.echo("=" * 56)
+    typer.echo(f"Total completed: {len(completed_tasks)}\n")
+    prev_task = {"parent_id": None}
     for task in completed_tasks:
-        print(format_task_info(prev_task, task))
+        typer.echo(format_task_info(prev_task, task))
         prev_task = task
+
+
+def cli():
+    app()
