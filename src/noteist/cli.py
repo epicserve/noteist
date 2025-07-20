@@ -21,13 +21,14 @@ def format_task_info(prev_task: dict, task: dict) -> str:
     completed_local = completed_at.strftime("%Y-%m-%d %H:%M:%S")
 
     bullet = "* "
+    color = "bold green" if not task["parent_id"] else "bold white"
     if task["parent_id"]:
         bullet = "  - "
-    rtn_val = f"{bullet}{task['content']} (completed: {completed_local})"
+    rtn_val = f"{bullet}[{color}]{task['content']}[/{color}] (completed: {completed_local})"
     if prev_task["parent_id"] is not None and task["parent_id"] is None:
         rtn_val = f"\n{rtn_val}"
     if task["description"]:
-        rtn_val += textwrap.indent(f"\n{task['description']}\n", " " * len(bullet))
+        rtn_val += textwrap.indent(f"\n[white]{task['description']}[/white]\n", " " * len(bullet))
 
     return rtn_val
 
@@ -115,7 +116,7 @@ def main(
     typer.echo(f"Total completed: {len(completed_tasks)}\n")
     prev_task = {"parent_id": None}
     for task in completed_tasks:
-        typer.echo(format_task_info(prev_task, task))
+        print(format_task_info(prev_task, task))
         prev_task = task
 
 
