@@ -15,44 +15,51 @@ Print out a report of completed tasks in a Todoist project in Markdown.
    * Log in to your [Todoist account](https://todoist.com/).
    * Go to **Settings** > **Integrations** > **Developer (tab)**.
    * Copy your **API token** from the "API token" section.
-2. Install [UV](https://docs.astral.sh/uv/getting-started/installation/)
+2. A Python Interpreter
+
+
+## Install
+
+It's recommended you use [UV](https://docs.astral.sh/uv/) and either install as a tool
+(`uv tool install noteist`) or run it with `uvx noteist`. You can also install it with
+`pip` if you prefer.
 
 
 ## Usage
 
 Print help:
 ```sh
-uvx noteist --help
+noteist --help
 ```
 
 Print out completed tasks for the Todoist project Work with the default of two weeks:
 ```sh
-uvx noteist --project "Work" --token <TOKEN>
+noteist --project "Work" --token <TOKEN>
 ```
 
 Save the project "Work" as the default:
 ```sh
-uvx noteist config set project Work
+noteist config set project Work
 ```
 
 Save the token "example-token" as the default:
 ```sh
-uvx noteist config set token example-token
+noteist config set token example-token
 ```
 
 List saved defaults:
 ```sh
-uvx noteist config list
+noteist config list
 ```
 
 Unset a saved default:
 ```sh
-uvx noteist config unset project
+noteist config unset project
 ```
 
 Specify the time range:
 ```sh
-uvx noteist --since 2025-07-01 --until 2025-07-15
+noteist --since 2025-07-01 --until 2025-07-15
 ```
 
 Use relative dates, with anything [dateparser](https://dateparser.readthedocs.io/en/latest/#) supports:
