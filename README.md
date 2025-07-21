@@ -55,6 +55,11 @@ Specify the time range:
 uvx noteist --since 2025-07-01 --until 2025-07-15
 ```
 
+Use relative dates, with anything [dateparser](https://dateparser.readthedocs.io/en/latest/#) supports:
+```sh
+noteist --since "-7d" --until "-3d"
+```
+
 ## Development
 
 To run the script locally while in development.

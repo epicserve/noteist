@@ -5,6 +5,7 @@ description = "Output a Markdown formatted report of completed tasks in Todoist.
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
+    "dateparser>=1.2.2",
     "requests>=2.32.4",
     "toml>=0.10.2",
     "typer>=0.16.0",

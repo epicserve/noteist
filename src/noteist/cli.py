@@ -4,6 +4,7 @@ import logging
 import textwrap
 from datetime import datetime, timedelta
 
+import dateparser
 import typer
 from rich import print
 from typer import Context
@@ -13,6 +14,7 @@ from noteist.config_app import config_app, load_config
 from noteist.todoist_client import TodoistClient
 
 logger = logging.getLogger(__name__)
+DATE_FORMAT = "%Y-%m-%d"
 
 
 def format_task_info(prev_task: dict, task: dict) -> str:
@@ -56,14 +58,14 @@ def main(
             ...,
             help="Start date (YYYY-MM-DD, default: two weeks ago)",
         ),
-    ] = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d"),
+    ] = (datetime.now() - timedelta(days=14)).strftime(DATE_FORMAT),
     until: Annotated[
         str,
         typer.Option(
             ...,
             help="End date (YYYY-MM-DD, default: today)",
         ),
-    ] = datetime.now().strftime("%Y-%m-%d"),
+    ] = datetime.now().strftime(DATE_FORMAT),
     version: Annotated[bool, typer.Option("--version", help="Print the current version", is_flag=True)] = False,
     debug: Annotated[bool, typer.Option("--debug", help="Enable debug logging", is_flag=True)] = False,
 ):
@@ -100,14 +102,15 @@ def main(
         for p in projects["results"]:
             print(f"  - {p['name']}")
         raise typer.Exit(1)
+
     if not since:
-        since = datetime.now().strftime("%Y-%m-%d")
+        since = (datetime.now() - timedelta(days=14)).strftime(DATE_FORMAT)
     if not until:
-        until = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d")
-    since_dt = datetime.strptime(since, "%Y-%m-%d")
-    until_dt = datetime.strptime(until, "%Y-%m-%d") + timedelta(days=1) - timedelta(seconds=1)
+        until = datetime.now().strftime(DATE_FORMAT)
+    since_dt = dateparser.parse(since)
+    until_dt = dateparser.parse(until) + timedelta(days=1) - timedelta(seconds=1)
     completed_tasks = client.get_completed_tasks(proj["id"], since_dt, until_dt)
-    time_range_str = f"({since_dt.strftime('%Y-%m-%d')} to {until_dt.strftime('%Y-%m-%d')})"
+    time_range_str = f"({since_dt.strftime(DATE_FORMAT)} to {until_dt.strftime(DATE_FORMAT)})"
     if not completed_tasks:
         typer.echo(f"\nNo completed tasks found {time_range_str}")
         return
