@@ -16,13 +16,33 @@ class TodoistClient:
             "Content-Type": "application/json",
         }
 
-    def _request(self, method: str, endpoint: str, params=None) -> list[dict] | dict:
+    def _merge_dicts(self, parent_data: dict, child_data: dict):
+        result = parent_data.copy()
+        for key, value in child_data.items():
+            if key in result:
+                if isinstance(result[key], dict) and isinstance(value, dict):
+                    result[key] = self._merge_dicts(result[key], value)
+                elif isinstance(result[key], list) and isinstance(value, list):
+                    result[key] += value
+                else:
+                    result[key] = value
+            else:
+                result[key] = value
+        return result
+
+    def _request(self, method: str, endpoint: str, params=None, data=None) -> list[dict] | dict:
         url = f"{self.base_url}/{endpoint}"
         params = params or {}
         response = requests.request(method, url, headers=self.headers, params=params, timeout=30)
         logger.debug(f"Request: {method} {url} - {response.status_code} - {response.reason} - {response.text}")
         response.raise_for_status()
-        return response.json()
+        response_data = response.json()
+        next_cursor = response_data.get("next_cursor")
+        data = self._merge_dicts(data, response_data) if data is not None else response_data
+        if next_cursor:
+            params["cursor"] = next_cursor
+            return self._request(method, endpoint, params=params, data=data)
+        return data
 
     def get_projects(self) -> list[dict]:
         """Get all projects."""
