@@ -31,7 +31,8 @@ version_bump version:
     uv version --bump {{ version }}
     VERSION=$(uv version --short)
     # Update __version__ in src/noteist/__init__.py
-    sed -i "s/^__version__ = .*/__version__ = \"$VERSION\"/" src/noteist/__init__.py
+    sed -i.bak "s/^__version__ = .*/__version__ = \"$VERSION\"/" src/noteist/__init__.py || exit 1
+    rm src/noteist/__init__.py.bak
     git add pyproject.toml uv.lock src/noteist/__init__.py
     git commit -m "Version bump to v$VERSION"
     git tag -a "v$VERSION" -m ""
