@@ -63,7 +63,7 @@ class TodoistClient:
         return None
 
     def get_completed_tasks(self, project_id: str, since: datetime, until: datetime) -> list[dict]:
-        """Get completed tasks for a specific project since a given date."""
+        """Get completed tasks for a specific project since a given date, nested by parent-child relationships."""
         iso_8601_format = "%Y-%m-%dT%H:%M:%SZ"
 
         data = self._request(
@@ -75,4 +75,24 @@ class TodoistClient:
                 "until": until.strftime(iso_8601_format),
             },
         )
-        return data["items"]
+        items = data["items"]
+        # Build id -> item mapping
+        id_map = {item["id"]: {**item, "children": []} for item in items}
+        # Nest children under parents
+        roots = []
+        for item in items:
+            parent_id = item.get("parent_id")
+            if parent_id is None:
+                roots.append(id_map[item["id"]])
+            elif parent_id in id_map:
+                id_map[parent_id]["children"].append(id_map[item["id"]])
+
+        # Sort children by child_order
+        def sort_children(task):
+            task["children"].sort(key=lambda x: x.get("child_order", 0))
+            for child in task["children"]:
+                sort_children(child)
+
+        for root in roots:
+            sort_children(root)
+        return roots

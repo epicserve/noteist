@@ -17,14 +17,14 @@ logger = logging.getLogger(__name__)
 DATE_FORMAT = "%Y-%m-%d"
 
 
-def format_task_info(prev_task: dict, task: dict) -> str:
+def format_task_info(prev_task: dict, task: dict, child: bool = False) -> str:
     """Format task information for display."""
     completed_at = datetime.fromisoformat(task["completed_at"].replace("Z", "+00:00"))
     completed_local = completed_at.strftime("%Y-%m-%d %H:%M:%S")
 
     bullet = "* "
-    color = "bold green" if not task["parent_id"] else "bold white"
-    if task["parent_id"]:
+    color = "bold green" if child is False else "bold white"
+    if child is True:
         bullet = "  - "
     rtn_val = f"{bullet}[{color}]{task['content']}[/{color}] (completed: {completed_local})"
     if prev_task["parent_id"] is not None and task["parent_id"] is None:
@@ -115,12 +115,24 @@ def main(
         typer.echo(f"\nNo completed tasks found {time_range_str}")
         return
     typer.echo(f"\n📋 Completed Tasks in #Canopy {time_range_str}")
-    typer.echo("=" * 56)
-    typer.echo(f"Total completed: {len(completed_tasks)}\n")
+    typer.echo("=" * 56 + "\n")
+
+    main_tasks: int = 0
+    sub_tasks: int = 0
     prev_task = {"parent_id": None}
     for task in completed_tasks:
+        main_tasks += 1
         print(format_task_info(prev_task, task))
+        if task["children"]:
+            for child in task["children"]:
+                sub_tasks += 1
+                print(format_task_info(task, child, True))
         prev_task = task
+
+    typer.echo("\nCompleted Totals")
+    total_string = f"Main tasks: {main_tasks}, Sub tasks: {sub_tasks}, Total: {main_tasks + sub_tasks}\n"
+    typer.echo("-" * (len(total_string) - 1))
+    typer.echo(total_string)
 
 
 def cli():
