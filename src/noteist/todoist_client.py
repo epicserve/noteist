@@ -8,7 +8,10 @@ logger = logging.getLogger(__name__)
 
 class TodoistClient:
     def __init__(self, api_token: str):
-        """Todoist API client for making requests."""
+        """Todoist API client for making requests.
+
+        Todoist API documentation: https://developer.todoist.com/api/v1
+        """
         self.api_token = api_token
         self.base_url = "https://api.todoist.com/api/v1"
         self.headers = {
@@ -43,6 +46,16 @@ class TodoistClient:
             params["cursor"] = next_cursor
             return self._request(method, endpoint, params=params, data=data)
         return data
+
+    def add_task(self, content: str) -> dict:
+        """Add a new task to Todoist."""
+        return self._request(
+            "POST",
+            "tasks",
+            params={
+                "content": content,
+            },
+        )
 
     def get_projects(self) -> list[dict]:
         """Get all projects."""

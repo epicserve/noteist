@@ -10,6 +10,7 @@ from rich import print
 from typer import Context
 from typing_extensions import Annotated  # noqa: UP035
 
+from noteist.add_app import add_app
 from noteist.config_app import config_app, load_config
 from noteist.todoist_client import TodoistClient
 
@@ -45,6 +46,7 @@ def _version_callback(value: bool):
 
 app = typer.Typer()
 app.add_typer(config_app, name="config", help="Manage default values and options.")
+app.add_typer(add_app, name="add", help="Add a new task to Todoist.")
 
 
 @app.callback(invoke_without_command=True)
