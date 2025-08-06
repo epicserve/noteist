@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 
-import requests
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +33,8 @@ class TodoistClient:
     def _request(self, method: str, endpoint: str, params=None, data=None) -> list[dict] | dict:
         url = f"{self.base_url}/{endpoint}"
         params = params or {}
-        response = requests.request(method, url, headers=self.headers, params=params, timeout=30)
-        logger.debug(f"Request: {method} {url} - {response.status_code} - {response.reason} - {response.text}")
+        response = httpx.request(method, url, headers=self.headers, params=params, timeout=30)
+        logger.debug(f"Request: {method} {url} - {response.status_code} - {response.reason_phrase} - {response.text}")
         response.raise_for_status()
         response_data = response.json()
         next_cursor = response_data.get("next_cursor")
