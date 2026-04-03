@@ -8,7 +8,7 @@ import dateparser
 import typer
 from rich import print
 from typer import Context
-from typing_extensions import Annotated  # noqa: UP035
+from typing import Annotated
 
 from noteist.config_app import config_app, load_config
 from noteist.todoist_client import TodoistClient
