@@ -3,12 +3,12 @@
 import logging
 import textwrap
 from datetime import datetime, timedelta
+from typing import Annotated
 
 import dateparser
 import typer
 from rich import print
 from typer import Context
-from typing import Annotated
 
 from noteist.config_app import config_app, load_config
 from noteist.todoist_client import TodoistClient
